@@ -122,7 +122,7 @@ public class TurtleGraphic extends LBUGraphics {
                             break;
                         }
                         right(180);
-                        forward(dist);  // Let the overridden forward() handle pen state
+                        forward(dist);  
                         right(180);
                     } catch (NumberFormatException e) {
                         System.out.println("Invalid parameter: '" + temp[1] + "'. Please enter a number.");
@@ -457,8 +457,8 @@ public class TurtleGraphic extends LBUGraphics {
             File file = chooser.getSelectedFile();
             try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
                 String line;
-                clear();  // Optional: clear canvas before loading
-                reset();  // Optional: reset position before loading
+                clear(); 
+                reset();
                 while ((line = reader.readLine()) != null) {
                     processCommand(line);
                 }
