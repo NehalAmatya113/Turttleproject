@@ -21,6 +21,8 @@ public class TurtleGraphic extends LBUGraphics {
     private List<String> commandHistory = new ArrayList<>();
     private boolean unsavedImage = false;
     private boolean unsavedCommands = false;
+    private boolean savedCommands = false;
+    private boolean isPenDown = true;
     private int penWidth = 1;
 
     public static void main(String[] args) {
@@ -82,11 +84,14 @@ public class TurtleGraphic extends LBUGraphics {
                 break;
 
             case "pendown":
+                isPenDown = true;
                 drawOn();
+                System.out.println("Pen is DOWN (drawing enabled)");
                 break;
-
             case "penup":
+                isPenDown = false;
                 drawOff();
+                System.out.println("Pen is UP (drawing disabled)");
                 break;
 
             case "move":
@@ -107,18 +112,20 @@ public class TurtleGraphic extends LBUGraphics {
                 }
                 break;
 
+
             case "reverse":
-                drawOn();
                 if (temp.length > 1) {
                     try {
                         int dist = Integer.parseInt(temp[1]);
-                        if (dist < 0 ) {
-                            System.out.println(" Distance must be greater than zero.");
+                        if (dist < 0) {
+                            System.out.println("Distance must be greater than zero.");
                             break;
                         }
-                        reverse(dist);
+                        right(180);
+                        forward(dist);  // Let the overridden forward() handle pen state
+                        right(180);
                     } catch (NumberFormatException e) {
-                        System.out.println(" Invalid parameter: '" + temp[1] + "'. Please enter a number.");
+                        System.out.println("Invalid parameter: '" + temp[1] + "'. Please enter a number.");
                     }
                 } else {
                     System.out.println("Please enter a parameter after the command");
@@ -294,6 +301,14 @@ public class TurtleGraphic extends LBUGraphics {
                 break;
 
             case "loadcommands":
+                if (unsavedCommands || unsavedImage) {
+                    int confirm = JOptionPane.showConfirmDialog(null, 
+                        "You have unsaved changes. Do you want to continue and lose unsaved work?", 
+                        "Unsaved Changes", JOptionPane.YES_NO_OPTION);
+                    if (confirm != JOptionPane.YES_OPTION) {
+                        break;
+                    }
+                }
                 loadCommandsFromFile();
                 break;
 
@@ -311,6 +326,15 @@ public class TurtleGraphic extends LBUGraphics {
     public void about() {
         super.about(); 
         System.out.println("Nehal "); 
+    }
+    @Override
+    public void forward(int distance) {
+        if (isPenDown) {
+            drawOn();
+        } else {
+            drawOff();
+        }
+        super.forward(distance);
     }
 
     public void drawSquare(int length) {
@@ -377,6 +401,7 @@ public class TurtleGraphic extends LBUGraphics {
         }
         setPenColour(currentColor);
     }
+    
 
     public void setStroke(int width) {
         Graphics2D g2d = (Graphics2D) getGraphics();
@@ -416,39 +441,31 @@ public class TurtleGraphic extends LBUGraphics {
                 for (String cmd : commandHistory) {
                     writer.println(cmd);
                 }
+                savedCommands = true;
                 unsavedCommands = false;
                 System.out.println("Commands saved to: " + file.getAbsolutePath());
             } catch (IOException e) {
-                System.out.println("Error saving commands: " + e.getMessage());
+                System.out.println("Failed to save commands: " + e.getMessage());
             }
         }
     }
 
     public void loadCommandsFromFile() {
-        if (unsavedImage || unsavedCommands) {
-            int choice = JOptionPane.showConfirmDialog(null,
-                "You have unsaved changes. Save before loading?",
-                "Warning", JOptionPane.YES_NO_CANCEL_OPTION);
-            if (choice == JOptionPane.CANCEL_OPTION) return;
-            if (choice == JOptionPane.YES_OPTION) {
-                saveImageToFile();
-                saveCommandsToFile();
-            }
-        }
         JFileChooser chooser = new JFileChooser();
         int option = chooser.showOpenDialog(null);
         if (option == JFileChooser.APPROVE_OPTION) {
             File file = chooser.getSelectedFile();
             try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
                 String line;
+                clear();  // Optional: clear canvas before loading
+                reset();  // Optional: reset position before loading
                 while ((line = reader.readLine()) != null) {
-                    processCommand(line.trim());
+                    processCommand(line);
                 }
-                unsavedImage = false;
                 unsavedCommands = false;
                 System.out.println("Commands loaded from: " + file.getAbsolutePath());
             } catch (IOException e) {
-                System.out.println("Error loading commands: " + e.getMessage());
+                System.out.println("Failed to load commands: " + e.getMessage());
             }
         }
     }
